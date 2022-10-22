@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+<LinearLayout
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/hello_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Hello World!!"
+        android:textSize="20sp"
+        android:gravity="center_horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/user_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:hint="User Name"/>
+
+    <EditText
+        android:id="@+id/display_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:hint="Display Name" />
+
+    <View
+        android:layout_width="0dp"
+        android:layout_height="5pt" />
+
+    <TextView
+        android:id="@+id/inside_storage_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="..."
+        android:textSize="16sp"
+        android:gravity="center_horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/btn_reg"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="clickReg"
+        android:text="Register" />
+
+    <Button
+        android:id="@+id/btn_auth"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="clickAuth"
+        android:text="Authenticate" />
+
+    <Button
+        android:id="@+id/btn_auth_dis"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="clickAuthDiscover"
+        android:text="Auth(Discover)" />
+
+    <View
+        android:layout_width="0dp"
+        android:layout_height="5pt" />
+
+    <Button
+        android:id="@+id/btn_clear"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#ffff4444"
+        android:text="Clear Keys"
+        android:textColor="#ffffff"
+        android:onClick="clearKeys"
+        tools:ignore="TextContrastCheck" />
+
+    <View
+        android:layout_width="0dp"
+        android:layout_height="2pt" />
+
+    <Button
+        android:id="@+id/btn_reset"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#ffff4444"
+        android:text="Reset"
+        android:textColor="#ffffff"
+        android:onClick="reset"
+        tools:ignore="TextContrastCheck" />
+
+    <View
+        android:layout_width="0dp"
+        android:layout_height="2pt" />
+
+    <EditText
+        android:id="@+id/clear_rp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:hint="RpId to clear" />
+
+    <Button
+        android:id="@+id/btn_clear_rp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#ffff4444"
+        android:text="Clear RP"
+        android:textColor="#ffffff"
+        android:onClick="clearRp"
+        tools:ignore="TextContrastCheck" />
+
+</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
