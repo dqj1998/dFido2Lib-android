@@ -209,10 +209,10 @@ enum class COSEAlgorithmIdentifier(val cose: Long){
     other(0);
 
     companion object{
-        open fun fromRaw(id: Long): COSEAlgorithmIdentifier? {
-            val types: Array<COSEAlgorithmIdentifier> = COSEAlgorithmIdentifier.values()
+        fun fromRaw(id: Long): COSEAlgorithmIdentifier? {
+            val types: Array<COSEAlgorithmIdentifier> = values()
             for (type in types) {
-                if (type.cose === id) {
+                if (type.cose == id) {
                     return type
                 }
             }

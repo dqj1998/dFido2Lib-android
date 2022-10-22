@@ -11,6 +11,7 @@ import dqj.dfido2lib.core.client.Fido2Error
 import dqj.dfido2lib.core.client.Fido2Util
 import kotlinx.coroutines.*
 
+@OptIn(DelicateCoroutinesApi::class)
 class MainActivity : AppCompatActivity() {
     private val fido2SvrURL = "https://mac.dqj-macpro.com" /*"http://192.168.0.124:3000"*/
 
@@ -52,8 +53,7 @@ class MainActivity : AppCompatActivity() {
         try {
             GlobalScope.launch(Dispatchers.Default) {//Does NOT use main routine because Fido2Lib need block it routine and launch UI(main)
                 try {
-                    val succ = fido2Client.registerAuthenticator(
-                        fido2SvrURL, unm, disp, opt,
+                    val succ = fido2Client.registerAuthenticator(fido2SvrURL, opt,
                         "Register", "Register your FIDO2 account", true
                     )
 

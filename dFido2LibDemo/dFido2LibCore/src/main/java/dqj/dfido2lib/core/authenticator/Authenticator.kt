@@ -384,27 +384,6 @@ class PublicKeyCredentialSource(
 
     }
 
-    /*val idHex: String
-        get() = ByteArrayUtil.toHex(this.id)
-
-    val keyLabel: String
-        get() = this.rpId + "/" + ByteArrayUtil.toHex(this.userHandle)
-
-    fun toBase64(): String? {
-        return try {
-            val cbor = toCBOR()
-            if (cbor != null) {
-                // TODO encryption
-                ByteArrayUtil.encodeBase64URL(cbor)
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            Fido2Logger.warn(TAG, "failed to encode Base64: " + e.localizedMessage)
-            null
-        }
-    }*/
-
     fun toCBOR(): ByteArray? {
         return try {
 
@@ -565,14 +544,10 @@ class PlatformAuthenticator//init non-resident keys
         var enableSilentCredentialDiscovery: Boolean = true
 
         const val ENCRYPT_DATA_ALG: String ="RSA/ECB/PKCS1Padding" //"RSA/ECB/OAEPwithSHA-1andMGF1Padding"
-        //const val KEY_PREFIX: String = "dfido2lib_key_"
 
         private const val NON_RESIDENTSECKEY_ALIAS = "dFido2Lib_nonresident-seckey"
         private const val NON_RESIDENTSECKEY_PRFER_FNM = "dFido2Lib_nonresident-iv"
         private const val NON_RESIDENTSECKEY_PRFERKEY_IV = "dFido2Lib_nonresident-iv"
-
-        //private lateinit var nonResidentPrivateKey:  PrivateKey
-        //private lateinit var nonResidentPublicKey: PublicKey
 
         //Platform Authenticator Crypto support
 
@@ -620,7 +595,7 @@ class PlatformAuthenticator//init non-resident keys
 
         }
 
-        fun makeKey(keyPara: Pair<String, Int>, credentialId: String): Pair<PrivateKey, PublicKey> {
+        fun makeKey(keyPara: Pair<String, Int>): Pair<PrivateKey, PublicKey> {
             if ("RSA" != keyPara.first) {
                 Fido2Logger.err(
                     KeystoreCredentialStore::class.simpleName,
@@ -639,30 +614,10 @@ class PlatformAuthenticator//init non-resident keys
             val random = SecureRandom()
             kpg.initialize(keyPara.second, random)
             val keyPair = kpg.generateKeyPair()
-            /*val fullAlias = KEY_PREFIX + credentialId
-            kpg.initialize(
-                KeyGenParameterSpec.Builder(
-                    fullAlias,
-                    KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY
-                )
-                    .setDigests(KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA512)
-                    .setKeySize(keyPara.second)
-                    .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
-                    .build()
-            )*/
-
-            //val keyPair: KeyPair = kpg.generateKeyPair()
-
-            //Delete key from store, we save key in PublicKeyCredentialSource
-            /*val keyStore = KeyStore.getInstance("AndroidKeyStore")
-            keyStore.load(null)
-            keyStore.deleteEntry(fullAlias)*/
 
             return Pair(
                 keyPair.private,
                 keyPair.public
-                //keyPair.private,
-                //keyPair.public
             )
         }
     }
@@ -700,16 +655,7 @@ class PlatformAuthenticator//init non-resident keys
                 )
 
                 kpg.generateKey()
-                //val keyPair: KeyPair = kpg.generateKeyPair()
-                //nonResidentPrivateKey = keyPair.private //as RSAPrivateKey
-                //nonResidentPublicKey = keyPair.public //as RSAPublicKey
             }
-            /*else {
-                nonResidentPrivateKey =
-                    (entry as KeyStore.PrivateKeyEntry).privateKey //as RSAPrivateKey
-                nonResidentPublicKey =
-                    keyStore.getCertificate(NON_RESIDENTSECKEY_ALIAS).publicKey //as RSAPublicKey
-            }*/
         } catch (ex: Exception) {
             Fido2Logger.err(
                 PlatformAuthenticator::class.simpleName,
@@ -718,14 +664,8 @@ class PlatformAuthenticator//init non-resident keys
         }
     }
 
-    fun encryptData(data: ByteArray): ByteArray {
+    private fun encryptData(data: ByteArray): ByteArray {
         Fido2Logger.debug(Authenticator::class.simpleName, "encryptData: $data")
-
-        //val cipher: Cipher = Cipher.getInstance(ENCRYPT_DATA_ALG)
-
-        //val cipher = Cipher.getInstance("RSA/ECB/OAEPWITHSHA-512ANDMGF1PADDING")
-
-        //cipher.init(Cipher.ENCRYPT_MODE, publicKey)
 
         val keyStore = KeyStore.getInstance("AndroidKeyStore")
         keyStore.load(null)
@@ -742,12 +682,8 @@ class PlatformAuthenticator//init non-resident keys
         return cipher.doFinal(data)
     }
 
-    fun decryptData(data: ByteArray): ByteArray {
+    private fun decryptData(data: ByteArray): ByteArray {
         Fido2Logger.debug(Authenticator::class.simpleName, "decryptData: $data")
-
-        //val cipher: Cipher = Cipher.getInstance(ENCRYPT_DATA_ALG)
-
-        //cipher.init(Cipher.DECRYPT_MODE, privateKey)
 
         val keyStore = KeyStore.getInstance("AndroidKeyStore")
         keyStore.load(null)
@@ -791,16 +727,7 @@ class PlatformAuthenticator//init non-resident keys
 
         try {
             val keyPara = getKeyGeneratePara(requestedAlgs.toTypedArray())
-            /*if (null == keyPara) {
-                Fido2Logger.debug(
-                    PlatformAuthenticator::class.simpleName,
-                    "<getKeyGeneratePara> fail"
-                )
-                throw Fido2Error.new(
-                    Fido2Error.Companion.ErrorType.notSupported,
-                    "<getKeyGeneratePara> fail"
-                )
-            }*/
+
             Fido2Logger.debug(PlatformAuthenticator::class.simpleName, "<getKeyGeneratePara> keyPara: $keyPara")
 
             var hasSourceToBeExcluded = false
@@ -858,18 +785,15 @@ class PlatformAuthenticator//init non-resident keys
             }
 
             //dqj TODO: UI interaction
-            var userConsent = false
             runBlocking {
                 val newUserConsentDeferred = async(Dispatchers.Main) {
                     requestUserConsent(messageTitle, messageSubtitle, allowDeviceSecure, context) }
-                userConsent = newUserConsentDeferred.await()
+                newUserConsentDeferred.await()
             }
-
-            //requestUserConsent(messageTitle, messageSubtitle, allowDeviceSecure, context)
 
             var credentialIdStr = UUID.randomUUID().toString()
 
-            val keyPair = makeKey(Pair(keyPara.first, keyPara.second), credentialIdStr)
+            val keyPair = makeKey(Pair(keyPara.first, keyPara.second))
             val algTxt = "SHA${keyPara.second / 8}with${keyPara.first}"
 
             val credSource = PublicKeyCredentialSource(
@@ -1033,11 +957,10 @@ class PlatformAuthenticator//init non-resident keys
         }
 
         //dqj TODO: UI interaction
-        var userConsent = false
         runBlocking {
             val newUserConsentDeferred = async(Dispatchers.Main) {
                 requestUserConsent(messageTitle, messageSubtitle, allowDeviceSecure, context) }
-            userConsent = newUserConsentDeferred.await()
+            newUserConsentDeferred.await()
         }
 
         //dqj TODO: Support processedExtensions
@@ -1065,17 +988,6 @@ class PlatformAuthenticator//init non-resident keys
         var dataToBeSigned = authenticatorDataBytes
         dataToBeSigned = dataToBeSigned?.plus(clientDataHash)
 
-        /*val keyStore = KeyStore.getInstance("AndroidKeyStore")
-        keyStore.load(null)
-        val entry = keyStore.getEntry(PlatformAuthenticator.KEY_PREFIX + String(copiedCred.id),
-                null) as KeyStore.PrivateKeyEntry
-        if((entry.privateKey as PrivateKey).algorithm.indexOf("RSA")<0){
-            Fido2Logger.err(PlatformAuthenticator::class.simpleName,
-                "<sign> Only support RSA now: ${entry.privateKey::class.simpleName}"
-            )
-            return null
-        }*/
-
         val spec = PKCS8EncodedKeySpec(copiedCred.privateKey)
         val keyFactory = KeyFactory.getInstance(KeyProperties.KEY_ALGORITHM_RSA)
         val pkey = keyFactory.generatePrivate(spec)
@@ -1085,7 +997,7 @@ class PlatformAuthenticator//init non-resident keys
         signer.update(dataToBeSigned)
         val signature = signer.sign()
         var assertion = AuthenticatorAssertionResult(authenticatorDataBytes!!,signature)
-        assertion.userHandle = copiedCred?.userHandle
+        assertion.userHandle = copiedCred.userHandle
 
         if(allowCredentialDescriptorList.size != 1) {
             assertion.credentailId = copiedCred.id
@@ -1361,14 +1273,6 @@ class KeystoreCredentialStore(var context: Context) : CredentialStore {
         keyStore.load(null)
         all.forEach { name ->
             if (null == rpId || name == PREFERENCE_FILENAME_PREFIX + rpId) {
-                val prefer = context.getSharedPreferences(name, MODE_PRIVATE)
-                val allkeys=prefer.all
-                for (onekey in allkeys) {
-                    val cred = PublicKeyCredentialSource.fromCBOR(decodeBase64URL(onekey.value as String))
-                    /* we do not use KeyStore to make keys if(null!=cred){
-                        keyStore.deleteEntry(PlatformAuthenticator.KEY_PREFIX+String(cred.id))
-                    }*/
-                }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     context.deleteSharedPreferences(name)
                 } else {
@@ -1423,7 +1327,6 @@ class KeystoreCredentialStore(var context: Context) : CredentialStore {
             : PublicKeyCredentialSource? {
         var cid = String(credentialId)
         val pref = getEncryptedSharedPreferences(PREFERENCE_FILENAME_PREFIX + rpId)
-        val allItems = pref.all
         val cobr= pref.getString(cid, null)
         return if (cobr != null) {
             PublicKeyCredentialSource.fromCBOR(decodeBase64URL(cobr))
@@ -1454,64 +1357,5 @@ class KeystoreCredentialStore(var context: Context) : CredentialStore {
 
     }
 
-    /*fun saveKey(keyChainId: String, handle: String, key: ByteArray) {
-        getEncryptedSharedPreferences(PREFERENCE_FILENAME_PREFIX + keyChainId)
-            .edit().putString(handle, String(key))
-    }*/
-
-    /*fun retrieveKey(keyChainId: String, handle: String) : ByteArray? {
-        return getEncryptedSharedPreferences(PREFERENCE_FILENAME_PREFIX + keyChainId).getString(
-            handle,
-            null
-        )?.toByteArray()
-    }*/
-
-    /*fun deleteKey(alias: String) {
-        val preferList = EncryptedSharedPreferences.create(
-            context, PREFERENCE_FILENAME_ALL_PREFERENCES,
-            getMasterKey(PREFERENCE_MASTER_KEY_ALIAS),
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
-
-        val all=getStringArrayPref(preferList, PREFERENCE_KEYNAME_KEYALIAS_PREFERENCES)
-
-
-    }*/
-    /*fun clearKeys(){
-        val preferList = context.getSharedPreferences(PREFERENCE_FILENAME_ALL_PREFERENCES, MODE_PRIVATE)
-
-        val all=getStringArrayPref(preferList, PREFERENCE_KEYNAME_KEYALIAS_PREFERENCES)
-        all.forEach { alias ->
-            deleteKey(alias)
-        }
-
-        preferList.edit().clear()
-    }*/
-
-    /*private fun retrieveKey(alias: String) : Pair<RSAPrivateKey, RSAPublicKey>? {
-        val keyStore = KeyStore.getInstance("AndroidKeyStore")
-        keyStore.load(null)
-        val entry = keyStore.getEntry(KEYSTORE_ALIAS_PREFIX + alias, null)
-
-        return if(null != entry){
-            Pair<RSAPrivateKey, RSAPublicKey>(
-                (entry as KeyStore.PrivateKeyEntry).privateKey as RSAPrivateKey,
-                keyStore.getCertificate(alias).publicKey as RSAPublicKey)
-        }else null
-    }*/
-
-    /*private fun recordAlias(alias: String){
-        val preferList = EncryptedSharedPreferences.create(
-            context, PREFERENCE_FILENAME_ALL_PREFERENCES,
-            getMasterKey(PREFERENCE_MASTER_KEY_ALIAS),
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
-
-        val all=getStringArrayPref(preferList, PREFERENCE_KEYNAME_KEYALIAS_PREFERENCES)
-        all.add(alias)
-        setStringArrayPref(preferList, PREFERENCE_KEYNAME_KEYALIAS_PREFERENCES, all)
-    }*/
 }
 

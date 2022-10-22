@@ -4,6 +4,7 @@ import android.content.Context
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
+import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 import dqj.dfido2lib.core.*
 import dqj.dfido2lib.core.authenticator.AttestationObject
@@ -28,14 +29,10 @@ class Fido2Core(context: Context) {
 
     private var curTimeout:Long = defaultTimeout //ms
 
-    private lateinit var authenticatorPlatform: PlatformAuthenticator
+    private var authenticatorPlatform: PlatformAuthenticator
 
     init {
         authenticatorPlatform = PlatformAuthenticator(context)
-    }
-
-    fun getWords(): String {
-        return "Hello! From Fido2Lib"
     }
 
     companion object{
@@ -112,7 +109,7 @@ class Fido2Core(context: Context) {
 
     //dqj TODO: cancel method(6.3.4. The authenticatorCancel Operation)
 
-    suspend fun registerAuthenticator(fido2SvrURL:String, username: String, displayname: String,
+    suspend fun registerAuthenticator(fido2SvrURL:String,
                               attestationOptions: Map<String, Any>,
                               messageTitle: String, messageSubtitle: String,
                               allowDeviceSecure: Boolean): Boolean{
@@ -137,14 +134,7 @@ class Fido2Core(context: Context) {
 
             val pubkCredCrtOpts = gson.fromJson(resp.first, PublicKeyCredentialCreationOptions::class.java)
 
-            /*var pubkeyCredPair:Pair<Long, PublicKeyCredential<AuthenticatorAttestationResponse>>
-            runBlocking {
-                val newCredDeferred = async(Dispatchers.IO) { createNewCredential(pubkCredCrtOpts, fido2SvrURL,
-                    messageTitle, messageSubtitle, allowDeviceSecure) }
-                pubkeyCredPair = newCredDeferred.await()
-            }*/
-
-            var pubkeyCredPair = createNewCredential(pubkCredCrtOpts, fido2SvrURL,
+            val pubkeyCredPair = createNewCredential(pubkCredCrtOpts, fido2SvrURL,
                 messageTitle, messageSubtitle, allowDeviceSecure)
 
             val newCred = pubkeyCredPair.second
@@ -357,14 +347,6 @@ class Fido2Core(context: Context) {
                 attestation = makeCredentialDeferred.await()
             }
 
-            /*var attestation = authenticator.authenticatorMakeCredential(
-                messageTitle, messageSubtitle, allowDeviceSecure,
-                clientDataTriple.third, rpEntity, options.user, requireResidentKey,  userPresence,
-                userVerification, options.pubKeyCredParams.toTypedArray(),
-                excludeCredentialDescriptorList.toTypedArray(),
-                enterpriseAttestationPossible, HashMap(), //dqj TODO: support extensions
-            )*/
-
             if (null == attestation) continue
 
             val attestedCred = attestation!!.authData.attestedCredentialData
@@ -462,7 +444,7 @@ class Fido2Core(context: Context) {
 
     fun authenticate(fido2SvrURL:String, assertionOptions: Map<String, Any>,
             messageTitle: String, messageSubtitle: String, allowDeviceSecure: Boolean) : Boolean {
-        var rtn=false;
+        var rtn: Boolean;
 
         try{
             val gson = Gson()
@@ -483,7 +465,8 @@ class Fido2Core(context: Context) {
 
             val jsonOptsData = JsonParser.parseString(resp.first).asJsonObject
             if (jsonOptsData.get("challenge") == null)  {
-                throw Fido2Error.new(Fido2Error.Companion.ErrorType.unknown,jsonOptsData.get("message") as String)
+                val msg: JsonElement = jsonOptsData.get("message")
+                throw Fido2Error.new(Fido2Error.Companion.ErrorType.unknown, msg.asString)
             }
 
             var pubkCredReqOpts = gson.fromJson(resp.first, PublicKeyCredentialRequestOptions::class.java)
@@ -627,7 +610,7 @@ class Fido2Core(context: Context) {
                     }
                 }
 
-                if (null==allowCredentialDescriptorList || allowCredentialDescriptorList.isEmpty()) {
+                if (allowCredentialDescriptorList.isEmpty()) {
                     continue
                 }
 

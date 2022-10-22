@@ -62,15 +62,13 @@ class LibUtil{
                 usecaches: Boolean, timeout: Int = 60000): Pair<String, List<String>> {
             val url = URL(url)
             val urlConnection = url.openConnection() as HttpURLConnection
-            urlConnection.requestMethod = "POST"//method
+            urlConnection.requestMethod = method
 
             urlConnection.doOutput = true
             urlConnection.doInput = true
 
-            if (null != headers) {
-                headers.forEach { entry ->
-                    urlConnection.setRequestProperty(entry.key, entry.value)
-                }
+            headers.forEach { entry ->
+                urlConnection.setRequestProperty(entry.key, entry.value)
             }
 
             urlConnection.useCaches = usecaches
@@ -89,16 +87,15 @@ class LibUtil{
 
                 val statusCode = urlConnection.responseCode
                 if (statusCode == HttpURLConnection.HTTP_OK) {
-                    var inStream: InputStream? = null
-                    inStream = urlConnection.inputStream
+                    var inStream: InputStream? = urlConnection.inputStream
                     val br = BufferedReader(InputStreamReader(inStream))
 
                     for (line in br.readLines()) {
-                        line?.let { sbRtn.append(line) }
+                        line.let { sbRtn.append(line) }
                     }
 
                     br.close()
-                    inStream.close()
+                    inStream?.close()
 
                     urlConnection.headerFields.forEach{ (key, value) ->
                         if(null != key && key.uppercase() == "SET-COOKIE") sbCookies.addAll(value)
@@ -115,21 +112,25 @@ class LibUtil{
                     val br = BufferedReader(InputStreamReader(errStream))
                     val sb = StringBuilder()
                     for (line in br.readLines()) {
-                        line?.let { sb.append(line) }
+                        line.let { sb.append(line) }
                     }
                     br.close()
                     var errtxt = urlConnection.responseCode.toString() + urlConnection.responseMessage
                     Fido2Logger.err(LibUtil::class.simpleName, "$errtxt:$sb")
                     throw Fido2Error.new( Fido2Error.Companion.ErrorType.unknown, sb.toString())
                 } catch (e1: Exception) {
-                    Fido2Logger.err(LibUtil::class.simpleName, e1.localizedMessage)
+                    e1.localizedMessage?.let { Fido2Logger.err(LibUtil::class.simpleName, it) }
                     throw Fido2Error.new( Fido2Error.Companion.ErrorType.unknown, e1)
                 } finally {
                     if (errStream != null) {
                         try {
                             errStream.close()
                         } catch (e2: IOException) {
-                            Fido2Logger.err(LibUtil::class.simpleName, e2.localizedMessage)
+                            e2.localizedMessage?.let {
+                                Fido2Logger.err(LibUtil::class.simpleName,
+                                    it
+                                )
+                            }
                             throw Fido2Error.new( Fido2Error.Companion.ErrorType.unknown, e2)
                         }
                     }
@@ -137,7 +138,7 @@ class LibUtil{
             }catch (fido2ex:Fido2Error){
                 throw fido2ex
             }catch (ex:Exception){
-                Fido2Logger.err(LibUtil::class.simpleName, ex.localizedMessage)
+                ex.localizedMessage?.let { Fido2Logger.err(LibUtil::class.simpleName, it) }
                 throw Fido2Error.new(Fido2Error.Companion.ErrorType.notSupported, ex)
             }finally {
                 urlConnection.disconnect()
@@ -150,12 +151,9 @@ class LibUtil{
             val sbRtn = StringBuilder()
             //TODO check details, like expire time
             cookies.forEach { c ->
-                if(null != c) {
-                    var v:String
-                    if(0 < c.indexOf(";"))v=c.substring(0, c.indexOf(";")+1)+" "
-                    else v= "$c; "
-                    sbRtn.append(v)
-                }
+                var v = if(0 < c.indexOf(";")) c.substring(0, c.indexOf(";")+1)+" "
+                else "$c; "
+                sbRtn.append(v)
             }
             return sbRtn.toString()
         }

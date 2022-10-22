@@ -34,7 +34,7 @@ class Fido2Error: java.lang.Exception() {
         fun new(error: ErrorType = ErrorType.unknown, details: Exception): Fido2Error {
             var err = Fido2Error()
             err.error = error
-            if (null != details) err.details = details
+            err.details = details
             return err
         }
     }
