@@ -7,7 +7,7 @@ import java.net.URL
 
 class Fido2Util {
     companion object {
-        fun getDefaultRegisterOptions(username: String , displayname: String): HashMap<String, Any>{
+        fun getDefaultRegisterOptions(username: String , displayname: String, rpid: String): HashMap<String, Any>{
 
             var authenticatorSelection = HashMap<String, Any>()
             authenticatorSelection["userVerification"]="preferred"
@@ -17,10 +17,16 @@ class Fido2Util {
             attestationOptions["displayName"] = displayname
             attestationOptions["authenticatorSelection"] = authenticatorSelection
 
+            if( null!=rpid ){
+                var rp = HashMap<String, Any>()
+                rp["id"] = rpid
+                attestationOptions["rp"] = rp
+            }
+
             return attestationOptions
         }
 
-        fun getDefaultAuthenticateOptions(username: String = "") : HashMap<String, Any> {
+        fun getDefaultAuthenticateOptions(username: String = "", rpid: String) : HashMap<String, Any> {
 
             var authenticatorSelection = HashMap<String, Any>()
             authenticatorSelection["userVerification"]="preferred"
@@ -33,6 +39,12 @@ class Fido2Util {
             }
 
             assertionOptions["authenticatorSelection"] = authenticatorSelection
+
+            if( null!=rpid ){
+                var rp = HashMap<String, Any>()
+                rp["id"] = rpid
+                assertionOptions["rp"] = rp
+            }
 
             return assertionOptions
         }

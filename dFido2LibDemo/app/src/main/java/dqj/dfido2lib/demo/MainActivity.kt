@@ -3,7 +3,9 @@ package dqj.dfido2lib.demo
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
+import android.widget.ArrayAdapter
 import android.widget.EditText
+import android.widget.Spinner
 import android.widget.TextView
 import dqj.dfido2lib.core.internal.Fido2Logger
 import dqj.dfido2lib.core.client.Fido2Core
@@ -35,6 +37,14 @@ class MainActivity : AppCompatActivity() {
         inside_storage_text.text =
             if(Fido2Core.enabledInsideAuthenticatorResidentStorage()) "Enabled inside ResidentStorage"
             else  "Disabled inside ResidentStorage"
+
+        val adapter = ArrayAdapter<String>(this, android.R.layout.simple_spinner_item)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        adapter.add("mac.dqj-macpro.com")
+        adapter.add("rp01")
+        adapter.add("rp02")
+        val spinner = findViewById<View>(R.id.rpid) as Spinner
+        spinner.adapter = adapter
     }
 
     fun clickReg(view: View){
@@ -49,7 +59,9 @@ class MainActivity : AppCompatActivity() {
             disp = "Display_$unm"
         }
 
-        val opt = Fido2Util.getDefaultRegisterOptions(unm, disp)
+        var rpid = (findViewById<Spinner>(R.id.rpid)).selectedItem.toString()
+
+        val opt = Fido2Util.getDefaultRegisterOptions(unm, disp, rpid)
         try {
             GlobalScope.launch(Dispatchers.Default) {//Does NOT use main routine because Fido2Lib need block it routine and launch UI(main)
                 try {
@@ -99,7 +111,9 @@ class MainActivity : AppCompatActivity() {
             unm = "dqj001"
         }
 
-        val opt = Fido2Util.getDefaultAuthenticateOptions(unm)
+        var rpid = (findViewById<Spinner>(R.id.rpid)).selectedItem.toString()
+
+        val opt = Fido2Util.getDefaultAuthenticateOptions(unm, rpid)
         try {
             GlobalScope.launch(Dispatchers.Default) {//Does NOT use main routine because Fido2Lib need block it routine and launch UI(main)
                 try {
@@ -145,7 +159,8 @@ class MainActivity : AppCompatActivity() {
     fun clickAuthDiscover(view: View){
         if(Fido2Core.enabledInsideAuthenticatorResidentStorage()){
             helloTxt.text = "Auth(discover)..."
-            val opt = Fido2Util.getDefaultAuthenticateOptions()
+            var rpid = (findViewById<Spinner>(R.id.rpid)).selectedItem.toString()
+            val opt = Fido2Util.getDefaultAuthenticateOptions("", rpid)
             try {
                 GlobalScope.launch(Dispatchers.Default) {//Does NOT use main routine because Fido2Lib need block it routine and launch UI(main)
                     try {
@@ -237,7 +252,7 @@ class MainActivity : AppCompatActivity() {
 
     fun clearRp(view: View){
         helloTxt.text = "Clear RP..."
-        var rp = (findViewById<EditText>(R.id.clear_rp)).text.toString()
+        var rp = (findViewById<Spinner>(R.id.rpid)).selectedItem.toString()
         if(rp.isEmpty()){
             helloTxt.text = "Input rpId to clear, please."
         }else{

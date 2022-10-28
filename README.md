@@ -4,7 +4,7 @@ FIDO2/WebAuthn heavily depends on browsers' implementation. A native lib is sign
 
 Support Android 6(API 23)+
 
-## Target of this project
+# Target of this project
 1. a Modern project 
 
   * Modern Kotlin runBlocking/async mechanism rather than embedded callbacks. 
@@ -16,16 +16,20 @@ Support Android 6(API 23)+
 
 4. Keep source code structure as simple as possible
 
-## Compatible FIDO2 servers 
+# Compatible FIDO2 servers 
 * fido2-node (https://github.com/dqj1998/fido2-node.git) 
 
 * LINE FIDO2 server (https://github.com/line/line-fido2-server.git).  
 ** Does not support real non-resident credentials
 ** Requires cookies managemant of client side to manage sessions
  
+# Extension features
 
-## Thanks
+## Multiple rps
+One domain can support multiple RPs by set rp.id. has to work with fido2-node server.
+
+# Thanks
 * https://github.com/lyokato/WebAuthnKit-Android.git
 
-## Contact
+# Contact
 * d@dqj.work

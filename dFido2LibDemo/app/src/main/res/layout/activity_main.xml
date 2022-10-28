@@ -22,21 +22,29 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <Spinner
+        android:id="@+id/rpid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp" />
+
     <EditText
         android:id="@+id/user_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
+        android:hint="User Name"
         android:inputType="textPersonName"
-        android:hint="User Name"/>
+        android:minHeight="48dp" />
 
     <EditText
         android:id="@+id/display_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
+        android:hint="Display Name"
         android:inputType="textPersonName"
-        android:hint="Display Name" />
+        android:minHeight="48dp" />
 
     <View
         android:layout_width="0dp"
@@ -106,14 +114,6 @@
     <View
         android:layout_width="0dp"
         android:layout_height="2pt" />
-
-    <EditText
-        android:id="@+id/clear_rp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ems="10"
-        android:inputType="textPersonName"
-        android:hint="RpId to clear" />
 
     <Button
         android:id="@+id/btn_clear_rp"
