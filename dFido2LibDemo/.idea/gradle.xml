@@ -14,6 +14,7 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/dFido2LibCore" />
+            <option value="$PROJECT_DIR$/dFido2LibExt" />
           </set>
         </option>
       </GradleProjectSettings>

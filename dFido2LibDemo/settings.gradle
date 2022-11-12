@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 rootProject.name = "dFido2LibDemo"
 include ':app'
 include ':dFido2LibCore'
+include ':dFido2LibExt'

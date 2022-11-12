@@ -1,10 +1,23 @@
 package dqj.dfido2lib.core.internal
 
+import android.content.Context
+import android.content.SharedPreferences
+import android.os.Build
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
 import android.util.Log
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
+import dqj.dfido2lib.core.AttestationConveyancePreference
+import dqj.dfido2lib.core.authenticator.KeystoreCredentialStore
+import dqj.dfido2lib.core.authenticator.PublicKeyCredentialSource
 import dqj.dfido2lib.core.client.Fido2Error
+import org.json.JSONArray
+import org.json.JSONException
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.KeyStore
 
 class Fido2Logger {
 
@@ -157,5 +170,146 @@ class LibUtil{
             }
             return sbRtn.toString()
         }
+    }
+}
+
+class KeyTools (private var context: Context) {
+    companion object{
+        private const val PREFERENCE_FILENAME_ALL_KEYPREFERENCES= "all_dfido2lib_preferences_keys"
+        private const val PREFERENCE_KEYNAME_ALL_KEYPREFERENCES  = "all_preferences_keys"
+        //private const val PREFERENCE_FILENAME_PREFIX_KEYS = "dfido2lib_keys_"
+        private const val PREFERENCE_MASTER_KEY_ALIAS = "mkey_dfido2lib_pre_keys"
+    }
+
+    init {
+        //context.getSharedPreferences(PREFERENCE_FILENAME_ALL_PREFERENCES, MODE_PRIVATE)
+        EncryptedSharedPreferences.create(
+            context, PREFERENCE_FILENAME_ALL_KEYPREFERENCES,
+            getMasterKey(PREFERENCE_MASTER_KEY_ALIAS),
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM)
+    }
+
+    private fun getMasterKey(alias: String): MasterKey {
+        val spec = KeyGenParameterSpec.Builder(
+            alias, //MasterKey.DEFAULT_MASTER_KEY_ALIAS,
+            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+        )
+            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+            .setKeySize(256)
+            .build()
+
+        return MasterKey.Builder(this.context, alias)
+            .setKeyGenParameterSpec(spec)
+            .build()
+    }
+
+    fun saveKey(preferFile: String, handle: String, key: String){
+        val pref = getEncryptedSharedPreferences(preferFile)
+        //val s = ByteArrayUtil.encodeBase64URL(key)
+        pref.edit().putString(handle, key).commit()
+    }
+
+    fun retrieveKey(preferFile: String, handle: String) : String? {
+        val pref = getEncryptedSharedPreferences(preferFile)
+        val key = pref.getString(handle, null)
+        //return key?.let { ByteArrayUtil.decodeBase64URL(it) }
+        return key
+    }
+
+    fun deleteKey(preferFile: String, handle: String) {
+        getEncryptedSharedPreferences(preferFile)
+            .edit().remove(handle).commit()
+    }
+
+    fun clearKey(handle: String?) {
+        val preferList = context.getSharedPreferences(
+            PREFERENCE_FILENAME_ALL_KEYPREFERENCES,
+            Context.MODE_PRIVATE
+        )
+
+        val all=getStringArrayPref(preferList,
+            PREFERENCE_KEYNAME_ALL_KEYPREFERENCES
+        )
+        var keepNames= java.util.ArrayList<String>()
+        all.forEach { name ->
+            if (null == handle) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    context.deleteSharedPreferences(name)
+                } else {
+                    context.getSharedPreferences(name, Context.MODE_PRIVATE).edit().clear().commit()
+                    val dir = File(context.applicationInfo.dataDir, "shared_prefs")
+                    File(dir, "$name.xml").delete()
+                }
+            }else{
+                deleteKey(name, handle)
+                keepNames.add(name)
+            }
+        }
+        setStringArrayPref(preferList, PREFERENCE_KEYNAME_ALL_KEYPREFERENCES,keepNames)
+    }
+
+    private fun getEncryptedSharedPreferences(preferFile: String): SharedPreferences {
+        var encPref = context.getSharedPreferences(preferFile, Context.MODE_PRIVATE)
+
+        if(null == encPref){
+            encPref = EncryptedSharedPreferences.create(
+                context, preferFile,
+                getMasterKey(PREFERENCE_MASTER_KEY_ALIAS),
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM)
+        }
+
+        val preferList =context.getSharedPreferences(
+            PREFERENCE_FILENAME_ALL_KEYPREFERENCES,
+            Context.MODE_PRIVATE
+        )
+        val all=getStringArrayPref(preferList,
+            PREFERENCE_KEYNAME_ALL_KEYPREFERENCES
+        )
+        if(!all.contains(preferFile)){
+            all.add(preferFile)
+            setStringArrayPref(preferList,
+                PREFERENCE_KEYNAME_ALL_KEYPREFERENCES, all)
+        }
+
+        return encPref
+    }
+
+    private fun setStringArrayPref(preference: SharedPreferences, key: String, values: java.util.ArrayList<String>) {
+        val editor = preference.edit()
+        val a = JSONArray()
+        for (i in 0 until values.size) {
+            a.put(values[i])
+        }
+        if (values.isNotEmpty()) {
+            editor.putString(key, a.toString())
+        } else {
+            editor.putString(key, null)
+        }
+        editor.commit()
+    }
+
+    private fun getStringArrayPref(preference: SharedPreferences,  key: String): java.util.ArrayList<String> {
+        val json = preference.getString(key, null)
+        val rtn = java.util.ArrayList<String>()
+        if (json != null) {
+            try {
+                val a = JSONArray(json)
+                for (i in 0 until a.length()) {
+                    val v = a.optString(i)
+                    rtn.add(v)
+                }
+            } catch (e: JSONException) {
+                e.localizedMessage?.let {
+                    Fido2Logger.err(KeystoreCredentialStore::class.simpleName,
+                        it
+                    )
+                }
+                rtn.clear()
+            }
+        }
+        return rtn
     }
 }

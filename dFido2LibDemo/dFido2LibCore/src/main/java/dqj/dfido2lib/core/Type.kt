@@ -219,8 +219,19 @@ enum class COSEAlgorithmIdentifier(val cose: Long){
             return other
         }
     }
-
 }
+
+data class Account (
+    val rpid: String,
+    val username: String,
+    val displayname: String,
+    val credIdBase64: String
+)
+
+data class Accounts (
+    var accounts: ArrayList<Account>
+)
+
 
 
 

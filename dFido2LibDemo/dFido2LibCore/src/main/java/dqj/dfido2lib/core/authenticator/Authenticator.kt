@@ -1269,8 +1269,8 @@ class KeystoreCredentialStore(var context: Context) : CredentialStore {
 
         val all=getStringArrayPref(preferList, PREFERENCE_KEYNAME_ALL_PREFERENCES)
         var keepNames=ArrayList<String>()
-        val keyStore = KeyStore.getInstance("AndroidKeyStore")
-        keyStore.load(null)
+        //val keyStore = KeyStore.getInstance("AndroidKeyStore")
+        //keyStore.load(null)
         all.forEach { name ->
             if (null == rpId || name == PREFERENCE_FILENAME_PREFIX + rpId) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {

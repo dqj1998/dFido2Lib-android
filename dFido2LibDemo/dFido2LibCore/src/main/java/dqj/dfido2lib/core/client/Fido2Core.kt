@@ -15,6 +15,7 @@ import dqj.dfido2lib.core.internal.ByteArrayUtil
 import dqj.dfido2lib.core.internal.ByteArrayUtil.decodeBase64URL
 import dqj.dfido2lib.core.internal.ByteArrayUtil.encodeBase64URL
 import dqj.dfido2lib.core.internal.Fido2Logger
+import dqj.dfido2lib.core.internal.KeyTools
 import dqj.dfido2lib.core.internal.LibUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -31,14 +32,21 @@ class Fido2Core(context: Context) {
 
     private var authenticatorPlatform: PlatformAuthenticator
 
+    private var keyTool: KeyTools
+
     init {
         authenticatorPlatform = PlatformAuthenticator(context)
+        keyTool = KeyTools(context)
     }
 
     companion object{
         private var waitCannotFindAuthenticatorTimeout:Boolean = true
 
         private var canRegisterMultipleCredByMultipleTransports: Boolean = false
+
+        var AccountsKeyId: String = "dFido2Lib_client_accounts"
+
+        var enableAccountsList: Boolean = false
 
         /*
          Must wait for the timeout before sending excaption when cannot find authenticator according to the FIDO2 spec.
@@ -91,12 +99,14 @@ class Fido2Core(context: Context) {
     }
 
     fun reset(){
-        waitCannotFindAuthenticatorTimeout = true
         canRegisterMultipleCredByMultipleTransports = false
+        waitCannotFindAuthenticatorTimeout = true
 
         PlatformAuthenticator.enableResidentStorage = true
         PlatformAuthenticator.enableSilentCredentialDiscovery = true
         authenticatorPlatform.reset()
+
+        keyTool.clearKey(null)
 
         //Client cannot reset/clear server-side according to WebAuthN spec.
         //Server can clear based on users' operation or inactivity check.
@@ -105,6 +115,7 @@ class Fido2Core(context: Context) {
 
     fun clearKeys(rpId: String?){
         authenticatorPlatform.clearKeys(rpId)
+        keyTool.clearKey(rpId)
     }
 
     //dqj TODO: cancel method(6.3.4. The authenticatorCancel Operation)
@@ -163,6 +174,26 @@ class Fido2Core(context: Context) {
                     Fido2Logger.err(Fido2Core::class.simpleName, ex.localizedMessage+"|"+attResult);
                     throw Fido2Error.new( Fido2Error.Companion.ErrorType.unknown,
                         java.lang.Exception(ex.localizedMessage+"|"+attResult))
+                }
+
+                if(rtn && enableAccountsList){
+                    val rp = if (null != pubkCredCrtOpts.rp.id) pubkCredCrtOpts.rp.id else pubkCredCrtOpts.rp.name
+                    if(null!=rp){
+                        val acc = Account(rp, pubkCredCrtOpts.user.name, pubkCredCrtOpts.user.displayName, newCred.id)
+                        val accounts = keyTool.retrieveKey(Fido2Core.AccountsKeyId, rp)
+                        if(null == accounts){
+                            val newAccounts = Accounts(arrayListOf(acc))
+                            keyTool.saveKey(Fido2Core.AccountsKeyId, rp, gson.toJson(newAccounts))
+                        }else{
+                            var curAccounts = gson.fromJson(accounts, Accounts::class.java)
+                            if (null != curAccounts) {
+                                curAccounts.accounts.add(acc)
+                                keyTool.saveKey(Fido2Core.AccountsKeyId, rp, gson.toJson(curAccounts))
+                            }else{
+                                Fido2Logger.err(Fido2Core::class.simpleName,"Accounts.fromJSON is null.")
+                            }
+                        }
+                    }
                 }
 
                 if(!rtn && !enabledInsideAuthenticatorResidentStorage()){
@@ -443,7 +474,8 @@ class Fido2Core(context: Context) {
     }
 
     fun authenticate(fido2SvrURL:String, assertionOptions: Map<String, Any>,
-            messageTitle: String, messageSubtitle: String, allowDeviceSecure: Boolean) : Boolean {
+                     messageTitle: String, messageSubtitle: String, allowDeviceSecure: Boolean,
+                     selectedCredId: ByteArray?) : Boolean {
         var rtn: Boolean;
 
         try{
@@ -477,8 +509,12 @@ class Fido2Core(context: Context) {
                 pubkCredReqOpts.mediation = CredentialMediationRequirement.valueOf(assertionOptions["mediation"] as String)
             }
 
+            if(null == pubkCredReqOpts.rpId && null != assertionOptions["rp"] && null != (assertionOptions["rp"] as Map<String, Any>)["id"]) {
+                pubkCredReqOpts.rpId = (assertionOptions["rp"] as Map<String, Any>)["id"] as String
+            }
+
             val pubkeyPair = discoverFromExternalSource(pubkCredReqOpts, fido2SvrURL,
-                                    messageTitle,messageSubtitle, allowDeviceSecure)
+                                    messageTitle,messageSubtitle, allowDeviceSecure, selectedCredId)
             jsonStr = gson.toJson(pubkeyPair.second)
             Fido2Logger.debug(Fido2Core::class.simpleName,"</assertion/result> req: $jsonStr")
             headers["Cookie"] = LibUtil.buildCookesHeaderValue(resp.second)
@@ -527,7 +563,7 @@ class Fido2Core(context: Context) {
     @OptIn(ExperimentalUnsignedTypes::class)
     fun discoverFromExternalSource(options: PublicKeyCredentialRequestOptions, origin: String,
                                    messageTitle: String, messageSubtitle: String,
-                                   allowDeviceSecure: Boolean)
+                                   allowDeviceSecure: Boolean, selectedCredId: ByteArray?)
         : Pair<Long, PublicKeyCredential<AuthenticatorAssertionResponse>>{
 
         // 5.1.4.1 1-2, 5,6: No need as a lib
@@ -580,10 +616,20 @@ class Fido2Core(context: Context) {
             if(options.mediation == CredentialMediationRequirement.conditional && authenticator.canSilentCredentialDiscovery()){
                 val pubKeyCreds = authenticator.silentCredentialDiscovery(rpId)
 
-                //TODO: Selection UI
+                //We provide accounts list feature, not Selection UI here.
                 if(pubKeyCreds.isNotEmpty()) {
-                    val pubKeyDesc = PublicKeyCredentialDescriptor (PublicKeyCredentialType.PublicKey,
+                    var pubKeyDesc:PublicKeyCredentialDescriptor
+                    if (selectedCredId != null) {
+                        pubKeyDesc = PublicKeyCredentialDescriptor (PublicKeyCredentialType.PublicKey,
+                            encodeBase64URL(selectedCredId), mutableListOf(authenticator.transport.rawValue))
+                    }else{
+                        if(1 < pubKeyCreds.size) {
+                            Fido2Logger.info(Fido2Core::class.simpleName,
+                                "Discovered more then one credentials, return the first one. Enable AccountsList, list accounts and let user to select credential.")
+                        }
+                        pubKeyDesc = PublicKeyCredentialDescriptor (PublicKeyCredentialType.PublicKey,
                             encodeBase64URL(pubKeyCreds[0].id), mutableListOf(authenticator.transport.rawValue))
+                    }
                     realAllowCredentials = mutableListOf(pubKeyDesc)
                 }
             }
