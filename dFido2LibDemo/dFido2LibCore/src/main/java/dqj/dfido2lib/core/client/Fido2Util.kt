@@ -48,10 +48,6 @@ class Fido2Util {
 
             return assertionOptions
         }
-
-        fun configAccountListExt(enable: Boolean = true) {
-            Fido2Core.enableAccountsList = enable
-        }
     }
 
 }

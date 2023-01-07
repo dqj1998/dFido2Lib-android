@@ -17,7 +17,6 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import androidx.security.crypto.MasterKey.Builder
 import dqj.dfido2lib.core.*
-import dqj.dfido2lib.core.client.Fido2Core.Companion.enabledInsideAuthenticatorResidentStorage
 import dqj.dfido2lib.core.client.Fido2Error
 import dqj.dfido2lib.core.internal.ByteArrayUtil
 import dqj.dfido2lib.core.internal.ByteArrayUtil.decodeBase64URL
@@ -537,7 +536,7 @@ class PlatformAuthenticator//init non-resident keys
     override var allowUserVerification: Boolean = true
 ) : Authenticator {
     companion object {
-        val aaguid: ByteArray = byteArrayOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        //val aaguid: ByteArray = byteArrayOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         var servicePrefix: String = "dFido2Lib_seckey_"
 
         var enableResidentStorage: Boolean = true
@@ -829,7 +828,7 @@ class PlatformAuthenticator//init non-resident keys
             // TODO Extension Processing
             val extensions = HashMap<String, Any>()
 
-            val attestedCredData = AttestedCredentialData(aaguid, credentialId, keyPair.second)
+            val attestedCredData = AttestedCredentialData(LibConfig.aaguid, credentialId, keyPair.second)
 
             val md = MessageDigest.getInstance("SHA-256")
             val authenticatorData = AuthenticatorData(
@@ -1069,7 +1068,7 @@ class PlatformAuthenticator//init non-resident keys
                     //Do nothing, try next
                 }
             }
-            if (!enabledInsideAuthenticatorResidentStorage()) {
+            if (!LibConfig.enabledInsideAuthenticatorResidentStorage()) {
                 Fido2Logger.info(
                     PlatformAuthenticator::class.simpleName,
                     "No non-resident Credential found, we start to try resident Credential. " +

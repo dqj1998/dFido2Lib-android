@@ -165,7 +165,8 @@ enum class AttestationConveyancePreference(
 
     None("none"),
     Direct("direct"),
-    Indirect("indirect");
+    Indirect("indirect"),
+    Enterprise("enterprise");
 
     override fun toString(): String {
         return rawValue

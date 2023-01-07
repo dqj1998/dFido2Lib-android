@@ -6,6 +6,7 @@ import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import dqj.dfido2lib.core.LibConfig
 import dqj.dfido2lib.core.authenticator.decodeBasee64URLTry
 import dqj.dfido2lib.core.client.Fido2Core
 import dqj.dfido2lib.core.client.Fido2Error
@@ -39,12 +40,20 @@ class MainActivity : AppCompatActivity() {
 
         fido2Ext = ClientExt(this)
 
-        //Fido2Core.configInsideAuthenticatorResidentStorage(false)
+        //LibConfig.configInsideAuthenticatorResidentStorage(false)
 
-        Fido2Util.configAccountListExt(true)
+        LibConfig.configAccountListExt(true)
+
+        //Configs for enterprise attestation
+        ///16 char, Cannot double with aaguids in FIDO2 meta data(https://mds3.fidoalliance.org/)
+        ///Have to register ENTERPRISE_RPs and ENTERPRISE_AAGUIDs in fido2-node server env file
+        /// Changing to an unregistered aaguid will get error of registration.
+        LibConfig.setPlatformAuthenticatorAAGUID("aaguid_rp01_0000")
+
+        LibConfig.addEnterpriseRPIds(arrayOf("rp01.abc.com", "rp02.def.com"))
 
         inside_storage_text.text =
-            if(Fido2Core.enabledInsideAuthenticatorResidentStorage()) "Enabled inside ResidentStorage"
+            if(LibConfig.enabledInsideAuthenticatorResidentStorage()) "Enabled inside ResidentStorage"
             else  "Disabled inside ResidentStorage"
 
         val adapter = ArrayAdapter<String>(this, android.R.layout.simple_spinner_item)
@@ -200,7 +209,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun authDiscover(selectedCredId: String?){
-        if(Fido2Core.enabledInsideAuthenticatorResidentStorage()){
+        if(LibConfig.enabledInsideAuthenticatorResidentStorage()){
             helloTxt.text = "Auth(discover)..."
             var rpid = (findViewById<Spinner>(R.id.rpid)).selectedItem.toString()
             val opt = Fido2Util.getDefaultAuthenticateOptions("", rpid)
@@ -260,14 +269,14 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         } catch (err: Fido2Error) {
-           Fido2Logger.err(MainActivity::class.simpleName, err.fullMessage())
-           GlobalScope.launch(Dispatchers.Main) {
-               helloTxt.text = err.fullMessage()
-           }
-       } catch (e: java.lang.Exception) {
+            Fido2Logger.err(MainActivity::class.simpleName, err.fullMessage())
+            GlobalScope.launch(Dispatchers.Main) {
+                helloTxt.text = err.fullMessage()
+            }
+        } catch (e: java.lang.Exception) {
             e.localizedMessage?.let { Fido2Logger.err(MainActivity::class.simpleName, it) }
             helloTxt.text = e.localizedMessage
-       }
+        }
     }
 
     fun reset(view: View){
@@ -279,7 +288,7 @@ class MainActivity : AppCompatActivity() {
                     helloTxt.text = "Reset done"
 
                     inside_storage_text.text =
-                        if(Fido2Core.enabledInsideAuthenticatorResidentStorage()) "Enabled inside ResidentStorage"
+                        if(LibConfig.enabledInsideAuthenticatorResidentStorage()) "Enabled inside ResidentStorage"
                         else  "Disabled inside ResidentStorage"
                 }
             }

@@ -40,62 +40,13 @@ class Fido2Core(context: Context) {
     }
 
     companion object{
-        private var waitCannotFindAuthenticatorTimeout:Boolean = true
+        var waitCannotFindAuthenticatorTimeout:Boolean = true
 
-        private var canRegisterMultipleCredByMultipleTransports: Boolean = false
+        var canRegisterMultipleCredByMultipleTransports: Boolean = false
 
         var AccountsKeyId: String = "dFido2Lib_client_accounts"
 
         var enableAccountsList: Boolean = false
-
-        /*
-         Must wait for the timeout before sending excaption when cannot find authenticator according to the FIDO2 spec.
-         You can enable/disable this feature.
-         Default is enabled
-         But be careful, disabling this feature may decrease the security level.
-         */
-        fun configExcaptionTimeoutWaiting(enable: Boolean){
-            waitCannotFindAuthenticatorTimeout = enable
-        }
-
-        /*
-        Enable = Can register one device as mutiple authenticators through differet transports
-        Default is false
-        Refer spec 5.1.3 - 20.7: For each credential descriptor C in options.excludeCredentials
-        */
-        fun configMultipleCredByMultipleTransports(enable: Boolean){
-            canRegisterMultipleCredByMultipleTransports = enable
-        }
-
-        /*
-         Config if the inside authenticator storage resident keys.
-         Default is enabled.
-         */
-        fun configInsideAuthenticatorResidentStorage(enable: Boolean){
-            PlatformAuthenticator.enableResidentStorage = enable
-            if(!enable) {
-                PlatformAuthenticator.enableSilentCredentialDiscovery = false
-                Fido2Logger.info(Fido2Core::class.simpleName,"Auto disabled inside authenticator SilentCredentialDiscovery.")
-            }
-        }
-
-        fun enabledInsideAuthenticatorResidentStorage() : Boolean{
-            return PlatformAuthenticator.enableResidentStorage
-        }
-
-        /*
-         Config if the inside authenticator can SilentCredentialDiscovery.
-         Default is enabled.
-         */
-        fun configInsideAuthenticatorSilentCredentialDiscovery(enable: Boolean){
-            PlatformAuthenticator.enableSilentCredentialDiscovery = enable
-            if(enable) {
-                PlatformAuthenticator.enableResidentStorage = true
-                Fido2Logger.info(Fido2Core::class.simpleName,"Auto enabled inside authenticator ResidentStorage.")
-            }
-        }
-
-
     }
 
     fun reset(){
@@ -196,7 +147,7 @@ class Fido2Core(context: Context) {
                     }
                 }
 
-                if(!rtn && !enabledInsideAuthenticatorResidentStorage()){
+                if(!rtn && !LibConfig.enabledInsideAuthenticatorResidentStorage()){
                     Fido2Logger.err(Fido2Core::class.simpleName,
                         "Most like your FIDO2 server does not really support non-resident Credentials, if you confirmed all other cases.")
                 }
@@ -348,7 +299,8 @@ class Fido2Core(context: Context) {
 
             val userPresence = !userVerification //dqj: A miss of spec?
 
-            val enterpriseAttestationPossible = false //TODO: support enterprise
+            val enterpriseAttestationPossible = options.attestation == AttestationConveyancePreference.Enterprise &&
+                    LibConfig.enterpriseRPIds.contains(options.rp.id)
 
             val excludeCredentialDescriptorList = ArrayList<PublicKeyCredentialDescriptor>()
             if(canRegisterMultipleCredByMultipleTransports && options.excludeCredentials != null) {
@@ -545,7 +497,7 @@ class Fido2Core(context: Context) {
                     java.lang.Exception(ex.localizedMessage+"|"+resp))
             }
 
-            if(!rtn && !enabledInsideAuthenticatorResidentStorage()){
+            if(!rtn && !LibConfig.enabledInsideAuthenticatorResidentStorage()){
                 Fido2Logger.err(Fido2Core::class.simpleName,
                     "Most like your FIDO2 server does not really support non-resident Credentials, if you confirmed all other cases.")
             }
