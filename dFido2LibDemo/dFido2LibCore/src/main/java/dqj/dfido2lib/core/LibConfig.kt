@@ -11,6 +11,8 @@ class LibConfig {
 
         var enterpriseRPIds = arrayOf<String>()
 
+        var enableRooted: Boolean = false
+
         fun addEnterpriseRPIds(ids: Array<String>){
             enterpriseRPIds += ids
         }

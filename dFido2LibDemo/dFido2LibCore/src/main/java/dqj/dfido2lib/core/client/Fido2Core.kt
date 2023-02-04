@@ -74,10 +74,12 @@ class Fido2Core(context: Context) {
     suspend fun registerAuthenticator(fido2SvrURL:String,
                               attestationOptions: Map<String, Any>,
                               messageTitle: String, messageSubtitle: String,
-                              allowDeviceSecure: Boolean): Boolean{
+                              allowDeviceSecure: Boolean, context: Context): Boolean{
         var rtn = false
 
         try{
+            LibUtil.checkDevice(context)
+
             val gson = Gson()
             val jsonStr = gson.toJson(attestationOptions).toString()
             Fido2Logger.debug(Fido2Core::class.simpleName, "</attestation/options> req: $jsonStr")
@@ -427,10 +429,12 @@ class Fido2Core(context: Context) {
 
     fun authenticate(fido2SvrURL:String, assertionOptions: Map<String, Any>,
                      messageTitle: String, messageSubtitle: String, allowDeviceSecure: Boolean,
-                     selectedCredId: ByteArray?) : Boolean {
+                     selectedCredId: ByteArray?, context: Context) : Boolean {
         var rtn: Boolean;
 
         try{
+            LibUtil.checkDevice(context)
+
             val gson = Gson()
             var jsonStr = gson.toJson(assertionOptions).toString()
             Fido2Logger.debug(Fido2Core::class.simpleName, "</assertion/options> req: $jsonStr")

@@ -1,5 +1,6 @@
 package dqj.dfido2lib.demo
 
+import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
 import android.view.View
@@ -30,6 +31,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        LibConfig.enableRooted = true //For development, comment out for product!
 
         Fido2Logger.confLogLevel(Fido2Logger.Companion.Level.debug)
 
@@ -84,7 +87,8 @@ class MainActivity : AppCompatActivity() {
             GlobalScope.launch(Dispatchers.Default) {//Does NOT use main routine because Fido2Lib need block it routine and launch UI(main)
                 try {
                     val succ = fido2Client.registerAuthenticator(fido2SvrURL, opt,
-                        "Register", "Register your FIDO2 account", true
+                        "Register", "Register your FIDO2 account",
+                        true, view.context
                     )
 
                     if (succ) {
@@ -138,7 +142,7 @@ class MainActivity : AppCompatActivity() {
                     val succ = fido2Client.authenticate(
                         fido2SvrURL, opt,
                         "Authentication", "Authenticate your FIDO2 account",
-                        true, null
+                        true, null, view.context
                     )
 
                     if (succ) {
@@ -198,17 +202,17 @@ class MainActivity : AppCompatActivity() {
                 builder.setPositiveButton(android.R.string.ok)
                 { _, i ->
                     val indx=mNumberPicker.value
-                    authDiscover(curBase64CredId[indx])
+                    authDiscover(curBase64CredId[indx], view.context)
                 }
                 builder.setNegativeButton(android.R.string.cancel, null)
                 builder.create().show()
             } else curBase64CredId.clear()
         }
 
-        if(curBase64CredId.isEmpty())authDiscover(null)
+        if(curBase64CredId.isEmpty())authDiscover(null, view.context)
     }
 
-    private fun authDiscover(selectedCredId: String?){
+    private fun authDiscover(selectedCredId: String?, context: Context){
         if(LibConfig.enabledInsideAuthenticatorResidentStorage()){
             helloTxt.text = "Auth(discover)..."
             var rpid = (findViewById<Spinner>(R.id.rpid)).selectedItem.toString()
@@ -219,7 +223,7 @@ class MainActivity : AppCompatActivity() {
                         val succ = fido2Client.authenticate(
                             fido2SvrURL, opt,
                             "Authentication", "Authenticate your FIDO2 account",
-                            true, selectedCredId?.let { decodeBasee64URLTry(it) }
+                            true, selectedCredId?.let { decodeBasee64URLTry(it) }, context
                         )
 
                         if (succ) {

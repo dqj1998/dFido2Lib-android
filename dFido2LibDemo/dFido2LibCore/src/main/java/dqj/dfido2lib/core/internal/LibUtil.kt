@@ -8,16 +8,16 @@ import android.security.keystore.KeyProperties
 import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import dqj.dfido2lib.core.AttestationConveyancePreference
+import com.scottyab.rootbeer.RootBeer
+import dqj.dfido2lib.core.LibConfig
 import dqj.dfido2lib.core.authenticator.KeystoreCredentialStore
-import dqj.dfido2lib.core.authenticator.PublicKeyCredentialSource
 import dqj.dfido2lib.core.client.Fido2Error
 import org.json.JSONArray
 import org.json.JSONException
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
-import java.security.KeyStore
+
 
 class Fido2Logger {
 
@@ -170,6 +170,21 @@ class LibUtil{
             }
             return sbRtn.toString()
         }
+
+        fun checkDevice(context: Context){
+            if(!LibConfig.enableRooted){
+                val rootBeer = RootBeer(context)
+                if (rootBeer.isRooted) {
+                    Fido2Logger.err(LibUtil::class.simpleName,
+                        "A rooted device or emulator!"
+                    )
+                    throw Fido2Error.new(Fido2Error.Companion.ErrorType.unknown,
+                        "LibErr101: A rooted device or emulator!")
+                }
+            }
+        }
+
+
     }
 }
 
@@ -303,7 +318,7 @@ class KeyTools (private var context: Context) {
                 }
             } catch (e: JSONException) {
                 e.localizedMessage?.let {
-                    Fido2Logger.err(KeystoreCredentialStore::class.simpleName,
+                    Fido2Logger.err(KeyTools::class.simpleName,
                         it
                     )
                 }
