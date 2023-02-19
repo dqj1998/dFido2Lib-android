@@ -7,6 +7,8 @@ import dqj.dfido2lib.core.internal.Fido2Logger
 
 class LibConfig {
     companion object{
+        const val deviceUniqueIdKey: String = "dfido2_device_unique_id"
+
         var aaguid: ByteArray = byteArrayOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
         var enterpriseRPIds = arrayOf<String>()

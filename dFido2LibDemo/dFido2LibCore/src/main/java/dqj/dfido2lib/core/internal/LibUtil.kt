@@ -3,6 +3,7 @@ package dqj.dfido2lib.core.internal
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
+import android.preference.PreferenceManager
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Log
@@ -10,13 +11,14 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.scottyab.rootbeer.RootBeer
 import dqj.dfido2lib.core.LibConfig
-import dqj.dfido2lib.core.authenticator.KeystoreCredentialStore
 import dqj.dfido2lib.core.client.Fido2Error
 import org.json.JSONArray
 import org.json.JSONException
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.*
+import kotlin.collections.ArrayList
 
 
 class Fido2Logger {
@@ -184,6 +186,25 @@ class LibUtil{
             }
         }
 
+        fun getUniqueId(context: Context) : String{
+            val sp = context.getSharedPreferences("dFido2Lib_data", Context.MODE_PRIVATE)
+
+            var rtn = sp.getString(LibConfig.deviceUniqueIdKey, null)
+            if(rtn == null){
+                rtn = UUID.randomUUID().toString()
+                if(null == rtn){
+                    Fido2Logger.err(LibUtil::class.simpleName,"Cannot generate device unique id.")
+                    throw Fido2Error.new(Fido2Error.Companion.ErrorType.unknown,
+                        "Cannot generate device unique id.")
+                }
+                sp.edit().putString(LibConfig.deviceUniqueIdKey, rtn).commit()
+            }
+
+            //For debug chnaged unique device id
+            //rtn += "c"
+
+            return rtn
+        }
 
     }
 }

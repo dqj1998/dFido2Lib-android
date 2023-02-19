@@ -18,12 +18,9 @@ import androidx.security.crypto.MasterKey
 import androidx.security.crypto.MasterKey.Builder
 import dqj.dfido2lib.core.*
 import dqj.dfido2lib.core.client.Fido2Error
-import dqj.dfido2lib.core.internal.ByteArrayUtil
+import dqj.dfido2lib.core.internal.*
 import dqj.dfido2lib.core.internal.ByteArrayUtil.decodeBase64URL
 import dqj.dfido2lib.core.internal.ByteArrayUtil.encodeBase64URL
-import dqj.dfido2lib.core.internal.CBORReader
-import dqj.dfido2lib.core.internal.CBORWriter
-import dqj.dfido2lib.core.internal.Fido2Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
@@ -825,8 +822,12 @@ class PlatformAuthenticator//init non-resident keys
                 )
             }
 
-            // TODO Extension Processing
-            val extensions = HashMap<String, Any>()
+            val theExtensions = HashMap<String, Any>()
+            if(extensions.isNotEmpty()){
+                theExtensions.putAll(extensions)
+            }
+            theExtensions[LibConfig.deviceUniqueIdKey] = LibUtil.getUniqueId(context)
+            theExtensions["test_extensions_key"] = "Test_extensions_val"//for dev
 
             val attestedCredData = AttestedCredentialData(LibConfig.aaguid, credentialId, keyPair.second)
 
@@ -839,7 +840,7 @@ class PlatformAuthenticator//init non-resident keys
                 backupState = false,
                 signCount = 0u, //dqj TODO: support non-zero count
                 attestedCredentialData = attestedCredData,
-                extensions = extensions
+                extensions = theExtensions
             )
 
             val attestation =
@@ -969,7 +970,11 @@ class PlatformAuthenticator//init non-resident keys
         //dqj TODO: select cred & signCount
         val copiedCred = credSources[0]
 
-        val extensions = mapOf<String, Any>()
+        val theExtensions = HashMap<String, Any>()
+        if(extensions.isNotEmpty()){
+            theExtensions.putAll(extensions)
+        }
+        theExtensions[LibConfig.deviceUniqueIdKey] = LibUtil.getUniqueId(context)
 
         val md = MessageDigest.getInstance("SHA-256")
         val authenticatorData = AuthenticatorData(
@@ -980,7 +985,7 @@ class PlatformAuthenticator//init non-resident keys
             backupState = false,
             signCount = newSignCount,
             attestedCredentialData = null,
-            extensions = extensions
+            extensions = theExtensions
         )
         val authenticatorDataBytes = authenticatorData.toBytes()
 
