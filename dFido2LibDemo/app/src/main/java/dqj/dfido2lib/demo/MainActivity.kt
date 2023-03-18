@@ -48,10 +48,10 @@ class MainActivity : AppCompatActivity() {
         LibConfig.configAccountListExt(true)
 
         //Configs for enterprise attestation
-        ///16 char, Cannot double with aaguids in FIDO2 meta data(https://mds3.fidoalliance.org/)
+        ///Hex of 16 char, Cannot double with aaguids in FIDO2 meta data(https://mds3.fidoalliance.org/)
         ///Have to set enterprise to true and set enterprise_aaguids in doamn.json on server
         /// Changing to an unregistered aaguid will get error of registration.
-        LibConfig.setPlatformAuthenticatorAAGUID("aaguid_test_0000")
+        LibConfig.setPlatformAuthenticatorAAGUID("aaaaaaaaaaa888888888999999999000")
 
         LibConfig.addEnterpriseRPIds(arrayOf("rp01.abc.com", "rp02.def.com"))
 

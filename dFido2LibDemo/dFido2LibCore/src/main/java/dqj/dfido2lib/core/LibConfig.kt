@@ -24,9 +24,21 @@ class LibConfig {
         }
 
         fun setPlatformAuthenticatorAAGUID(id: String){
-            aaguid = id.toByteArray()
+            aaguid = readHexString(id); //id.toByteArray()
         }
 
+        fun readHexString(hexString: String): ByteArray {
+            val length = hexString.length / 2
+            val byteArray = ByteArray(length)
+
+            for (i in 0 until length) {
+                val startIndex = i * 2
+                val endIndex = startIndex + 2
+                val subString = hexString.substring(startIndex, endIndex)
+                byteArray[i] = subString.toInt(16).toByte()
+            }
+            return byteArray;
+        }
         /*
          Must wait for the timeout before sending excaption when cannot find authenticator according to the FIDO2 spec.
          You can enable/disable this feature.
